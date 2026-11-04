@@ -84,7 +84,7 @@ char req_name[100];
 extern uint8_t chatting_enabled;
 
 // Enabled TCPIP driver
-#if !defined __CELLOS_LV2__
+#if !defined __CELLOS_LV2__ && !defined __amigaos__
 #include "tcpip.h"
 tcpip_protocol tcpip;
 #endif
@@ -93,8 +93,14 @@ FILE *open_FILE(char const *filename, char const *mode)
 {
     /* FIXME: potential buffer overflow here */
     char tmp_name[200];
+#ifdef __amigaos__
+    /* A name with a volume or assign in it ("PROGDIR:Saves/...") is whole. */
+    if(get_filename_prefix() && filename[0] != '/' && !strchr(filename, ':'))
+        sprintf(tmp_name, "%s%s", get_filename_prefix(), filename);
+#else
     if(get_filename_prefix() && filename[0] != '/')
         sprintf(tmp_name, "%s %s", get_filename_prefix(), filename);
+#endif
     else
         strcpy(tmp_name, filename);
     return fopen(tmp_name, mode);

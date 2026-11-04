@@ -42,6 +42,10 @@
 #include "keys.h"
 #include "setup.h"
 
+#ifdef __amigaos__
+extern "C" void Abuse_amigaInit(void);
+#endif
+
 flags_struct flags;
 keys_struct keys;
 
@@ -93,6 +97,19 @@ void createRCFile( char *rcfile )
     if( (fd = fopen( rcfile, "w" )) != NULL )
     {
         fputs( "; Abuse-SDL Configuration file\n\n", fd );
+#ifdef __amigaos__
+        /* One frame shown per game frame (doublebuf), 320x200 unscaled,
+         * and the weapon keys on keys an Amiga has (no Insert, one Ctrl). */
+        fputs( "; Use DoubleBuffering (one frame shown per game frame)\ndoublebuf=1\n\n", fd );
+        fputs( "; Location of the datafiles\ndatadir=", fd );
+        fputs( ASSETDIR "\n\n", fd );
+        fputs( "; Set the scale factor\nscale=1\n\n", fd );
+        fputs( "; Key mappings\n", fd );
+        fputs( "left=LEFT\nright=RIGHT\nup=UP\ndown=DOWN\n", fd );
+        fputs( "fire=SPACE\nweapprev=CTRL_L\nweapnext=ALT_L\n", fd );
+        fclose( fd );
+        return;
+#endif
         fputs( "; Startup fullscreen\nfullscreen=0\n\n", fd );
         #ifdef __APPLE__
         fputs( "; Use DoubleBuffering\ndoublebuf=1\n\n", fd );
@@ -132,7 +149,12 @@ void readRCFile()
     char *result;
 
     rcfile = (char *)malloc( strlen( get_save_filename_prefix() ) + 9 );
+#ifdef __amigaos__
+    /* The prefix ends in "/"; another would mean the parent drawer. */
+    sprintf( rcfile, "%sabuserc", get_save_filename_prefix() );
+#else
     sprintf( rcfile, "%s/abuserc", get_save_filename_prefix() );
+#endif
     if( (fd = fopen( rcfile, "r" )) != NULL )
     {
         while( fgets( buf, sizeof( buf ), fd ) != NULL )
@@ -371,6 +393,15 @@ void setup( int argc, char **argv )
     keys.b3                    = key_value( "CTRL_R" );
     keys.b4                    = key_value( "INSERT" );
     scale                    = 2;            // Default scale amount
+#ifdef __amigaos__
+    // 320x200 on an 8-bit screen, shown once a frame; Ctrl and left Alt
+    // change weapons (the Amiga has no Insert and one Ctrl).
+    flags.doublebuf = 1;
+    keys.b3 = key_value( "CTRL_L" );
+    keys.b4 = key_value( "ALT_L" );
+    scale = 1;
+    Abuse_amigaInit();
+#endif
 
     // Display our name and version
     printf( "%s %s\n", PACKAGE_NAME, PACKAGE_VERSION );
@@ -388,6 +419,12 @@ void setup( int argc, char **argv )
     char *savedir;
     FILE *fd = NULL;
 
+#ifdef __amigaos__
+    // Saves, settings and caches go in the Saves drawer beside the program.
+    mkdir( "PROGDIR:Saves", S_IRUSR | S_IWUSR | S_IXUSR );
+    set_save_filename_prefix( "PROGDIR:Saves/" );
+    (void)homedir; (void)savedir; (void)fd;
+#else
     if( (homedir = getenv( "HOME" )) != NULL )
     {
         savedir = (char *)malloc( strlen( homedir ) + 9 );
@@ -414,6 +451,7 @@ void setup( int argc, char **argv )
         // Hopefully they have write permissions....
         set_save_filename_prefix( "" );
     }
+#endif
 
     // Set the datadir to a default value
     // (The current directory)

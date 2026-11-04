@@ -80,7 +80,12 @@ void set_filename_prefix(char const *prefix)
     {
         spec_prefix = strcpy( (char *)malloc( strlen( prefix ) + 2 ), prefix );
         int len = strlen( prefix );
+#ifdef __amigaos__
+        /* "PROGDIR:" + "/" would be PROGDIR:'s parent drawer. */
+        if( prefix[len - 1] != '\\' && prefix[len - 1] != '/' && prefix[len - 1] != ':')
+#else
         if( prefix[len - 1] != '\\' && prefix[len - 1] != '/')
+#endif
         {
             spec_prefix[len] = '/';
             spec_prefix[len + 1] = 0;
@@ -291,7 +296,12 @@ void jFILE::open_external(char const *filename, char const *mode, int flags)
 {
   int skip_size=0;
   char tmp_name[200];
+#ifdef __amigaos__
+  /* A name with a volume or assign in it ("PROGDIR:Saves/...") is whole. */
+  if (spec_prefix && filename[0] != '/' && !strchr(filename, ':'))
+#else
   if (spec_prefix && filename[0] != '/')
+#endif
     sprintf(tmp_name,"%s%s",spec_prefix,filename);
   else strcpy(tmp_name,filename);
 
