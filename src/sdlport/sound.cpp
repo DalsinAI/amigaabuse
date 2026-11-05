@@ -33,6 +33,10 @@
 #include "setup.h"
 
 extern flags_struct flags;
+
+#ifdef __amigaos__
+extern "C" int Abuse_amigaExists(char const *path);
+#endif
 static int sound_enabled = 0;
 static SDL_AudioSpec audioObtained;
 
@@ -56,8 +60,16 @@ int sound_init( int argc, char **argv )
     // Check for the sfx directory, disable sound if we can't find it.
     datadir = get_filename_prefix();
     sfxdir = (char *)malloc( strlen( datadir ) + 5 + 1 );
+#ifdef __amigaos__
+    // The prefix ends in "/" (another would be the parent drawer), and
+    // fopen() opens no drawer here: look for it with a lock.
+    (void)fd;
+    sprintf( sfxdir, "%ssfx", datadir );
+    if( !Abuse_amigaExists( sfxdir ) )
+#else
     sprintf( sfxdir, "%s/sfx/", datadir );
     if( (fd = fopen( sfxdir,"r" )) == NULL )
+#endif
     {
         // Didn't find the directory, so disable sound.
         printf( "Sound: Disabled (couldn't find the sfx directory)\n" );
@@ -65,7 +77,12 @@ int sound_init( int argc, char **argv )
     }
     free( sfxdir );
 
+#ifdef __amigaos__
+    // acsdl12 mixes mono; every sample Abuse has is 11025 Hz, 8 bits.
+    if (Mix_OpenAudio(11025, AUDIO_S16SYS, 1, 256) < 0)
+#else
     if (Mix_OpenAudio(44100, AUDIO_S16SYS, 2, 128) < 0)
+#endif
     {
         printf( "Sound: Unable to open audio - %s\nSound: Disabled (error)\n", SDL_GetError() );
         return 0;
@@ -105,6 +122,9 @@ void sound_uninit()
 //
 sound_effect::sound_effect(char const *filename)
 {
+#ifdef __amigaos__
+    m_chunk = NULL; // was left unset when the file would not open
+#endif
     if (!sound_enabled)
         return;
 
@@ -135,7 +155,11 @@ sound_effect::~sound_effect()
     // Therefore with SDL_mixer, a sound that has not finished playing
     // on a level load will cut off in the middle. This is most noticable
     // for the button sound of the load savegame dialog.
+#ifdef __amigaos__
+    Mix_FadeOutChannel(-1, 100); // acsdl12 has no Mix_FadeOutGroup
+#else
     Mix_FadeOutGroup(-1, 100);
+#endif
     while (Mix_Playing(-1))
         SDL_Delay(10);
     Mix_FreeChunk(m_chunk);
@@ -174,6 +198,12 @@ song::song(char const * filename)
 
     rw = NULL;
     music = NULL;
+
+#ifdef __amigaos__
+    // The music is HMI, made into MIDI for SDL_mixer; acsdl12 plays
+    // ProTracker MODs only (and has no Mix_LoadMUS_RW): no music.
+    return;
+#endif
 
     char realname[255];
     strcpy(realname, get_filename_prefix());

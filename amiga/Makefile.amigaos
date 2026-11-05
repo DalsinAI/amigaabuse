@@ -1,0 +1,99 @@
+# Abuse 0.8 for AmigaOS 3.x / AmiCradle, 68040 + FPU, on acsdl12.
+#
+#   make -f amiga/Makefile.amigaos STOVE=/path/to/os32-gcc16/prefix \
+#        NDK=/path/to/gfopensdk/OpenNDK/Include_H \
+#        ACSDL=/path/to/amicradle-guest/gameports/acsdl12
+#
+# STOVE is GFOpenAmigaGCC 16.2.0-open4 or later. ACSDL is acsdl12, built with
+# its own Makefile.amigaos. amiga/config.h stands in for configure's: no
+# OpenGL, no TCP/IP (src/net/tcpip.cpp is left out, so no network game).
+# Output: build/amigaos/Abuse/ with the program, the game data in data/
+# (a drawer icon in every drawer), an empty Saves/ drawer, and the icons.
+
+STOVE   ?= $(HOME)/AmiCradle/stoves/os32-gcc16/prefix
+NDK     ?= $(HOME)/AmiCradle/gfopensdk/OpenNDK/Include_H
+ACSDL   ?= ../amicradle-guest/gameports/acsdl12
+ACGAME  ?= $(ACSDL)/../acgame
+CXX     = $(STOVE)/bin/m68k-amigaos-g++
+CC      = $(STOVE)/bin/m68k-amigaos-gcc
+CPU     ?= -m68040 -m68881
+OPT     ?= -O2 -fomit-frame-pointer
+INCS    = -Iamiga -Isrc -Isrc/lisp -Isrc/imlib -Isrc/net \
+          -I$(ACSDL)/include/SDL -I$(ACSDL)/include -I$(ACGAME)/include -I$(NDK)
+DEFS    = -DHAVE_CONFIG_H -DNO_CHECK
+# Abuse's 1995 code (and 2011's g++) warns in ways that are the same on
+# every machine and left as they are upstream: unused and set-but-unused
+# variables and functions, indentation, "register", virtuals hidden by
+# overloads, a Jwindow deleted through a non-virtual destructor, enum
+# arithmetic, lol/matrix.h's conversion operators, fixed-size sprintf
+# buffers for short names and messages, and narrowing in the network
+# and MIDI code (neither is used here). Pointer-type punning in the Lisp
+# objects is kept safe with -fno-strict-aliasing.
+UPSTREAM_W = -Wno-unused-but-set-variable -Wno-unused-function \
+          -Wno-misleading-indentation -Wno-register -Wno-overloaded-virtual \
+          -Wno-delete-non-virtual-dtor -Wno-deprecated-enum-enum-conversion \
+          -Wno-class-conversion -Wno-format-overflow -Wno-format-truncation \
+          -Wno-stringop-truncation -Wno-narrowing
+CXXFLAGS = -noixemul $(OPT) $(CPU) -fno-strict-aliasing -Wall $(UPSTREAM_W) $(DEFS) $(INCS)
+CFLAGS  = -noixemul -std=gnu99 $(OPT) $(CPU) -Wall $(DEFS) $(INCS)
+LDFLAGS = -noixemul $(CPU)
+BUILD   = build/amigaos
+OUT     = $(BUILD)/Abuse
+
+SRC     = $(filter-out src/net/tcpip.cpp src/tool/%, \
+            $(wildcard src/*.cpp src/lol/*.cpp src/ui/*.cpp src/lisp/*.cpp \
+                       src/imlib/*.cpp src/sdlport/*.cpp src/net/*.cpp))
+OBJS    = $(SRC:src/%.cpp=$(BUILD)/obj/%.o) $(BUILD)/obj/amiga/progdir.o $(BUILD)/obj/amiga/stack.o \
+          $(BUILD)/obj/amiga/pthread_stubs.o
+
+ICONS   = amiga/icons/Abuse-drawer.info amiga/icons/Abuse.info amiga/icons/ReadMe.info \
+          amiga/icons/COPYING.info amiga/icons/data.info amiga/icons/Saves.info
+DRAWER_ICON = amiga/icons/Abuse-drawer.info
+
+all: $(OUT)/Abuse $(OUT)/data/abuse.lsp
+
+$(OUT)/Abuse: $(OBJS) | $(OUT)
+	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(ACSDL)/build/amigaos/libacsdl12.a -lm
+
+# The data (all of data/ but its Makefiles), a copy of the drawer icon for
+# every drawer inside it, the empty Saves drawer, the ReadMe, the licences
+# in one COPYING, and the icons; Abuse.info goes beside the drawer.
+$(OUT)/data/abuse.lsp: $(ICONS) AMIGA_PORT.md COPYING COPYING.GPL COPYING.WTFPL | $(OUT)
+	rm -rf $(OUT)/data
+	cp -r data $(OUT)/data
+	rm -f $(OUT)/data/Makefile.am $(OUT)/data/Makefile.in
+	cd $(OUT)/data && find . -mindepth 1 -type d | while read d; do cp "$(CURDIR)/$(DRAWER_ICON)" "$$d.info"; done
+	mkdir -p $(OUT)/Saves
+	cp AMIGA_PORT.md $(OUT)/ReadMe
+	cat COPYING COPYING.GPL COPYING.WTFPL > $(OUT)/COPYING
+	cp amiga/icons/Abuse.info amiga/icons/ReadMe.info amiga/icons/COPYING.info \
+	   amiga/icons/data.info amiga/icons/Saves.info $(OUT)/
+	cp $(DRAWER_ICON) $(BUILD)/Abuse.info
+
+# quant_palette::create_pal() counts its loop the wrong way (undefined);
+# nothing calls it. level.cpp sizes two tables by a 16-bit count from the
+# level file, which g++ sees could be negative; the data's are not.
+$(BUILD)/obj/imlib/palette.o: CXXFLAGS += -Wno-aggressive-loop-optimizations
+$(BUILD)/obj/level.o: CXXFLAGS += -Wno-alloc-size-larger-than
+
+$(BUILD)/obj/%.o: src/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+# pthread_stubs.c: libstdc++ and libgcc's unwinder ask for POSIX threads;
+# the game has one. Its loose signatures are not checked against a header.
+$(BUILD)/obj/amiga/pthread_stubs.o: amiga/pthread_stubs.c
+	@mkdir -p $(dir $@)
+	$(CC) -noixemul -O2 $(CPU) -c -o $@ $<
+
+$(BUILD)/obj/amiga/%.o: amiga/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(BUILD) $(OUT):
+	mkdir -p $@
+
+clean:
+	rm -rf $(BUILD)
+
+.PHONY: all clean
