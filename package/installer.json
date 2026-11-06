@@ -1,0 +1,15 @@
+{
+  "name": "Abuse",
+  "version": "0.8-amiga2",
+  "drawer": "Abuse",
+  "program": "Abuse",
+  "cpu": "68040",
+  "fpu": true,
+  "space": 16000000,
+  "modules": [],
+  "keep": [
+    "Saves"
+  ],
+  "parent": "Work:Games",
+  "badge": "../amiga/icons/art/abuse.png"
+}

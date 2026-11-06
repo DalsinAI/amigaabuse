@@ -27,14 +27,29 @@ As abuse 0.8's COPYING says (all three texts are in COPYING in the drawer):
     make -f amiga/Makefile.amigaos \
         STOVE=/path/to/openamigagcc-16.2.0-open4-x86_64-linux \
         NDK=/path/to/gfopensdk/OpenNDK/Include_H \
-        ACSDL=/path/to/amicradle-guest/gameports/acsdl12
+        ACSDL=/path/to/amicradle-guest/gameports/acsdl12 \
+        ACSDLLIB=/path/to/acsdl12/build \
+        ACGAME=/path/to/acgame ACGAMELIB=/path/to/acgame/build-amiga
 
-acsdl12 is built first with its own `Makefile.amigaos`. This gives
+acsdl12 is built first with its own `Makefile.amigaos`, without its own
+copy of ACGame (`ACG=`): the game links acgame.library's stubs
+(`libacgame.a`). `package/build-amiga.sh` (STOVE and OUT set) makes the
+release archive with its installer, fetching and building acgame,
+acsdl12 and zlib at pinned commits. This gives
 `build/amigaos/Abuse/` (and `Abuse.info` beside it): the program `Abuse`,
 the game data in `data/`, an empty `Saves/` drawer, this ReadMe and the
 licences, with GlowIcons on everything, every drawer inside `data/` too.
 The icons are made by `port_icons.py` from `amiga/icons/icons.json`; the
 art is Abuse's own program icon (`doc/abuse.png`).
+
+## Installing
+
+Unpack the archive anywhere (on AmiCradle: `SYS:Utilities/OpenCompress x
+abuse-...lha RAM:`), then double-click `Install-Abuse` beside the `Abuse`
+drawer: it asks where to put the game (`Work:Games` by default) and keeps
+the `Saves` drawer (saved games and settings) of an earlier install. The
+drawer's `Libs` holds the acgame.library the game was built against, and
+the game opens that copy first.
 
 ## Playing
 
