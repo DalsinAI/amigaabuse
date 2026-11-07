@@ -170,7 +170,7 @@ void console::print_f( const char *format, ...)
   char st[300];
   va_list ap;
   va_start(ap, format);
-  vsprintf(st,format,ap);
+  vsnprintf(st, sizeof(st), format, ap);
   va_end(ap);
   put_string(st);
 }
