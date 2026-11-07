@@ -1,0 +1,62 @@
+{
+  "drawer": "Abuse",
+  "drawer_icon": "amiga/icons/Abuse-drawer.info",
+  "archive": "abuse-{version}-68040",
+  "members": [
+    {
+      "name": "Abuse",
+      "build": "Abuse",
+      "check": "executable_sha256"
+    },
+    {
+      "name": "Libs/acgame.library",
+      "build": "acgame.library",
+      "check": "acgame_library_sha256"
+    },
+    {
+      "name": "",
+      "tar": "drawer.tar"
+    }
+  ],
+  "aminet": [
+    [
+      "Short",
+      "Abuse, Crack dot Com's run-and-gun, 68040+FPU"
+    ],
+    [
+      "Author",
+      "Crack dot Com; Sam Hocevar and the SDL port's authors; Amiga port: AmiCradle Team"
+    ],
+    [
+      "Uploader",
+      "AmiCradle Team"
+    ],
+    [
+      "Type",
+      "game/shoot"
+    ],
+    [
+      "Version",
+      "{version}"
+    ],
+    [
+      "Requires",
+      "AmigaOS 3.x, 68040/68060 with FPU, AGA or RTG, AHI"
+    ],
+    [
+      "Architecture",
+      "m68k-amigaos >= 3.0"
+    ]
+  ],
+  "root": [
+    {
+      "name": "Install-Abuse",
+      "repo": "package/installer/Install-Abuse",
+      "installer": true
+    },
+    {
+      "name": "Install-Abuse.info",
+      "repo": "package/installer/Install-Abuse.info"
+    }
+  ]
+}
