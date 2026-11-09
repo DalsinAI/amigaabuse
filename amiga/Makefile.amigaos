@@ -13,7 +13,7 @@
 # the game gets ACGame from acgame.library, through ACGAMELIB's libacgame.a
 # (DalsinAI/acgame's stubs). package/acgame-deps.sh builds both.
 # Output: build/amigaos/Abuse/ with the program, the game data in data/
-# (a drawer icon in every drawer), an empty Saves/ drawer, and the icons.
+# an empty Saves/ drawer, and the icons.
 
 STOVE   ?= $(HOME)/AmiCradle/stoves/os32-gcc16/prefix
 NDK     ?= $(HOME)/AmiCradle/gfopensdk/OpenNDK/Include_H
@@ -54,7 +54,7 @@ OBJS    = $(SRC:src/%.cpp=$(BUILD)/obj/%.o) $(BUILD)/obj/amiga/progdir.o $(BUILD
           $(BUILD)/obj/amiga/pthread_stubs.o
 
 ICONS   = amiga/icons/Abuse-drawer.info amiga/icons/Abuse.info amiga/icons/ReadMe.info \
-          amiga/icons/COPYING.info amiga/icons/data.info amiga/icons/Saves.info
+          amiga/icons/COPYING.info amiga/icons/Saves.info
 DRAWER_ICON = amiga/icons/Abuse-drawer.info
 
 all: $(OUT)/Abuse $(OUT)/data/abuse.lsp
@@ -62,19 +62,18 @@ all: $(OUT)/Abuse $(OUT)/data/abuse.lsp
 $(OUT)/Abuse: $(OBJS) | $(OUT)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(ACSDLLIB)/libacsdl12.a $(ACGAMELIB)/libacgame.a -lm
 
-# The data (all of data/ but its Makefiles), a copy of the drawer icon for
-# every drawer inside it, the empty Saves drawer, the ReadMe, the licences
+# The data (all of data/ but its Makefiles),
+# the empty Saves drawer, the ReadMe, the licences
 # in one COPYING, and the icons; Abuse.info goes beside the drawer.
 $(OUT)/data/abuse.lsp: $(ICONS) AMIGA_PORT.md COPYING COPYING.GPL COPYING.WTFPL | $(OUT)
 	rm -rf $(OUT)/data
 	cp -r data $(OUT)/data
 	rm -f $(OUT)/data/Makefile.am $(OUT)/data/Makefile.in
-	cd $(OUT)/data && find . -mindepth 1 -type d | while read d; do cp "$(CURDIR)/$(DRAWER_ICON)" "$$d.info"; done
 	mkdir -p $(OUT)/Saves
 	cp AMIGA_PORT.md $(OUT)/ReadMe
 	cat COPYING COPYING.GPL COPYING.WTFPL > $(OUT)/COPYING
 	cp amiga/icons/Abuse.info amiga/icons/ReadMe.info amiga/icons/COPYING.info \
-	   amiga/icons/data.info amiga/icons/Saves.info $(OUT)/
+	   amiga/icons/Saves.info $(OUT)/
 	cp $(DRAWER_ICON) $(BUILD)/Abuse.info
 
 # quant_palette::create_pal() counts its loop the wrong way (undefined);

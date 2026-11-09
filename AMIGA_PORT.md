@@ -38,9 +38,9 @@ release archive with its installer, fetching and building acgame,
 acsdl12 and zlib at pinned commits. This gives
 `build/amigaos/Abuse/` (and `Abuse.info` beside it): the program `Abuse`,
 the game data in `data/`, an empty `Saves/` drawer, this ReadMe and the
-licences, with GlowIcons on everything, every drawer inside `data/` too.
-The icons are made by `port_icons.py` from `amiga/icons/icons.json`; the
-art is Abuse's own program icon (`doc/abuse.png`).
+licences, with GlowIcons on the program, the ReadMe, the licences and the
+Saves drawer. The icons are made by `port_icons.py` from
+`amiga/icons/icons.json`; the art is our own (`amiga/icons/art/abuse.svg`).
 
 ## Installing
 
